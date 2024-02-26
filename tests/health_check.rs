@@ -63,7 +63,7 @@ async fn subscribe_returns_a_400_when_data_is_missing() {
 fn spawn_app() -> u16 {
     let listener = TcpListener::bind("127.0.0.1:0").expect("Failed to bind Address");
     let port = listener.local_addr().unwrap().port();
-    let server = zerotoprod::run(listener).expect("Failed to bind address");
+    let server = zerotoprod::startup::run(listener).expect("Failed to bind address");
 
     let _ = tokio::spawn(server);
 
