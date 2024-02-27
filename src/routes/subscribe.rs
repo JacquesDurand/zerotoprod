@@ -3,6 +3,7 @@ use actix_web::web::Form;
 use actix_web::{post, HttpResponse};
 use serde::Deserialize;
 
+#[allow(dead_code)]
 #[derive(Deserialize)]
 pub struct SubscribeInput {
     email: String,
