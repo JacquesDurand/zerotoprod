@@ -1,5 +1,9 @@
 use std::net::TcpListener;
 
+use sqlx::{query, Connection, PgConnection};
+
+use zerotoprod::configuration::get_configuration;
+
 #[tokio::test]
 async fn health_check_works() {
     let port = spawn_app();
@@ -16,8 +20,17 @@ async fn health_check_works() {
 async fn subscribe_ok_for_valid_form_data() {
     let port = spawn_app();
 
-    let body = "email=ursula_le_guin%40gmail.com&name=le%20guin";
+    let connection_string = get_configuration()
+        .expect("Failed to read config file")
+        .database
+        .connection_string();
+
+    let mut connection = PgConnection::connect(&connection_string)
+        .await
+        .expect("Failed to connect to PostGre");
     let client = reqwest::Client::new();
+
+    let body = "email=ursula_le_guin%40gmail.com&name=le%20guin";
     let response = client
         .post(format!("http://127.0.0.1:{}/subscribe", port))
         .header("Content-Type", "application/x-www-form-urlencoded")
@@ -28,6 +41,14 @@ async fn subscribe_ok_for_valid_form_data() {
 
     assert!(response.status().is_success());
     assert_eq!(Some(0), response.content_length());
+
+    let saved = query!("SELECT email, name from subscriptions")
+        .fetch_one(&mut connection)
+        .await
+        .expect("Failed to fetch saved subscriptions");
+
+    assert_eq!("le guin", saved.name);
+    assert_eq!("ursula_le_guin@gmail.com", saved.email);
 }
 
 #[tokio::test]
